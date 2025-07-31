@@ -71,16 +71,22 @@ for (let i = 0; i < satellites.length; i++) {
 
 
 // In milliseconds!
-const dt = 100;
+// const updateInterval = 100;
 const GM = 3.98e14;
 const labelDistance = 20000000;
 const maxLabels = 20;
 
-const requestInterval = setInterval(updatePositions, dt);
+viewer.clock.shouldAnimate = true;
+var lastUpdateTime = viewer.clock.currentTime;
+viewer.clock.onTick.addEventListener(updatePositions);
+
+// const requestInterval = setInterval(updatePositions, updateInterval);
 
 function updatePositions() {
   const camPosition = viewer.camera.positionWC;
   let labelCount = 0;
+  const dt = Cesium.JulianDate.secondsDifference(viewer.clock.currentTime, lastUpdateTime);
+  lastUpdateTime = viewer.clock.currentTime;
 
   for (let i = 0; i < satellites.length; i++) {
     const satellite = satellites[i];
@@ -102,7 +108,6 @@ function updatePositions() {
       labelCount++;
     } else {
       labelCollection.get(i).show = false;
-
     }
   }
 }
