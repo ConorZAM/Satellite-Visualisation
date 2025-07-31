@@ -40,6 +40,7 @@ var satellites = lines.map(line => {
 satellites = satellites.filter(s => s.position.x != 0);
 
 var pointCollection = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+var labelCollection = viewer.scene.primitives.add(new Cesium.LabelCollection());
 
 console.log(`Drawing ${satellites.length} satellites`);
 
@@ -49,15 +50,19 @@ for (let i = 0; i < satellites.length; i++) {
   pointCollection.add({
     position: satellite.position,
     pixelSize: 4,
-    color: Cesium.Color.BLUE,
-    label: {
-      text: satellite.name,
-      font: "20px sans-serif",
-      showBackground: true,
-      distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 1000.0),
-      eyeOffset: new Cesium.Cartesian3(0, 3.5, 0),
-    }
+    color: Cesium.Color.BLUE
   });
+
+  labelCollection.add({
+    position: satellite.position,
+    text: satellite.name,
+    font: "20px sans-serif",
+    showBackground: true,
+    // show: false,
+    // distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 1000.0),
+    eyeOffset: new Cesium.Cartesian3(0, 3.5, 0),
+  });
+  labelCollection.get(i).show = false;
 }
 
 // viewer.camera.flyTo({
@@ -68,21 +73,19 @@ for (let i = 0; i < satellites.length; i++) {
 // In milliseconds!
 const dt = 100;
 const GM = 3.98e14;
-const earthRadius = 6371000;
+const labelDistance = 20000000;
+const maxLabels = 20;
 
 const requestInterval = setInterval(updatePositions, dt);
 
 function updatePositions() {
+  const camPosition = viewer.camera.positionWC;
+  let labelCount = 0;
+
   for (let i = 0; i < satellites.length; i++) {
     const satellite = satellites[i];
     const positionMagnitude = Cesium.Cartesian3.magnitude(satellite.position);
     const scale = -dt * (GM / (positionMagnitude * positionMagnitude));
-    // const scale = -dt * (GM / ((earthRadius + positionMagnitude) * (earthRadius + positionMagnitude)));
-
-    // console.log(i);
-    // console.log(positionMagnitude);
-    // console.log(scale);
-
 
     satellite.velocity[0] += scale * satellite.position.x / positionMagnitude;
     satellite.velocity[1] += scale * satellite.position.y / positionMagnitude;
@@ -93,6 +96,14 @@ function updatePositions() {
     satellite.position.z += dt * satellite.velocity[2];
 
     pointCollection.get(i).position = satellite.position;
+    if (labelCount < maxLabels && Cesium.Cartesian3.distance(satellite.position, camPosition) <= labelDistance) {
+      labelCollection.get(i).position = satellite.position;
+      labelCollection.get(i).show = true;
+      labelCount++;
+    } else {
+      labelCollection.get(i).show = false;
+
+    }
   }
 }
 
